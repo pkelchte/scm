@@ -22,7 +22,7 @@ func main() {
  Eval / Apply
 */
 
-func eval(e expr, en *env) (re expr) {
+func eval(e expr, en *env) (re interface{}) {
 	switch e := e.(type) {
 	case number:
 		re = e
@@ -70,7 +70,7 @@ func eval(e expr, en *env) (re expr) {
 	return
 }
 
-func apply(p interface{}, args []number) (re expr) {
+func apply(p interface{}, args []number) (re interface{}) {
 	switch p := p.(type) {
 	case pNumeric:
 		re = p(args...)
