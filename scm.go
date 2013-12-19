@@ -70,18 +70,18 @@ func eval(e expr, en *env) (res expr) {
 	return
 }
 
-func apply(p expr, args expr) (res expr) {
+func apply(p interface{}, args []number) (res expr) {
 	switch p := p.(type) {
 	case pNumeric:
-		res = p(args.([]number)...)
+		res = p(args...)
 	case pBoolean:
-		res = p(args.([]number)...)
+		res = p(args...)
 	case proc:
 		en := new(env)
 		en.vars = make(map[symbol]expr)
 		en.outer = p.en
 		for i := range p.parameters {
-			en.vars[p.parameters[i]] = args.([]number)[i]
+			en.vars[p.parameters[i]] = args[i]
 		}
 		res = eval(p.body, en)
 	default:
