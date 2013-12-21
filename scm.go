@@ -57,10 +57,10 @@ func eval(e expr, en *env) (re interface{}) {
 				re = eval(i, en)
 			}
 		default:
-			values := make([]number, 0)
+			values := make([]interface{}, 0)
 			for _, i := range e[1:] {
 				values = append(values,
-					eval(i, en).(number))
+					eval(i, en))
 			}
 			re = apply(eval(e[0], en), values)
 		}
@@ -70,9 +70,9 @@ func eval(e expr, en *env) (re interface{}) {
 	return
 }
 
-func apply(p interface{}, args []number) (re interface{}) {
+func apply(p interface{}, args []interface{}) (re interface{}) {
 	switch p := p.(type) {
-	case func(...number) interface{}:
+	case func(...interface{}) interface{}:
 		re = p(args...)
 	case proc:
 		en := &env{make(vars), p.en}
@@ -118,36 +118,36 @@ var globalenv = env {
 	vars {
 		symbol("#t"): true,
 		symbol("#f"): false,
-		symbol("+"): func(a ...number) interface{} {
-			v := a[0]
+		symbol("+"): func(a ...interface{}) interface{} {
+			v := a[0].(number)
 			for _, i := range a[1:] {
-				v += i
+				v += i.(number)
 			}
 			return v
 		},
-		symbol("-"): func(a ...number) interface{} {
-			v := a[0]
+		symbol("-"): func(a ...interface{}) interface{} {
+			v := a[0].(number)
 			for _, i := range a[1:] {
-				v -= i
+				v -= i.(number)
 			}
 			return v
 		},
-		symbol("*"): func(a ...number) interface{} {
-			v := a[0]
+		symbol("*"): func(a ...interface{}) interface{} {
+			v := a[0].(number)
 			for _, i := range a[1:] {
-				v *= i
+				v *= i.(number)
 			}
 			return v
 		},
-		symbol("/"): func(a ...number) interface{} {
-			v := a[0]
+		symbol("/"): func(a ...interface{}) interface{} {
+			v := a[0].(number)
 			for _, i := range a[1:] {
-				v /= i
+				v /= i.(number)
 			}
 			return v
 		},
-		symbol("<="): func(a ...number) interface{} {
-			return a[0] <= a[1]
+		symbol("<="): func(a ...interface{}) interface{} {
+			return a[0] .(number)<= a[1].(number)
 		}},
 
 	nil}
@@ -156,9 +156,9 @@ var globalenv = env {
  Parsing
 */
 
-type expr interface{} //expressions can be anything
+type expr interface{} //expressions are symbols, numbers, or lists of other expressions 
 type symbol string    //symbols are golang strings
-type number float64   //Constant numbers float64
+type number float64   //constant numbers float64
 
 func read(s string) expr {
 	tokens := tokenize(s)
