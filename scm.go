@@ -22,7 +22,7 @@ func main() {
  Eval / Apply
 */
 
-func eval(e expr, en *env) (re interface{}) {
+func eval(e expr, en *env) (re value) {
 	switch e := e.(type) {
 	case number:
 		re = e
@@ -57,7 +57,7 @@ func eval(e expr, en *env) (re interface{}) {
 				re = eval(i, en)
 			}
 		default:
-			values := make([]interface{}, 0)
+			values := make([]value, 0)
 			for _, i := range e[1:] {
 				values = append(values,
 					eval(i, en))
@@ -70,9 +70,9 @@ func eval(e expr, en *env) (re interface{}) {
 	return
 }
 
-func apply(p interface{}, args []interface{}) (re interface{}) {
+func apply(p value, args []value) (re value) {
 	switch p := p.(type) {
-	case func(...interface{}) interface{}:
+	case func(...value) value:
 		re = p(args...)
 	case proc:
 		en := &env{make(vars), p.en}
@@ -96,7 +96,7 @@ type proc struct {
  Environments
 */
 
-type vars map[symbol]expr
+type vars map[symbol]value
 type env struct {
 	vars
 	outer *env
@@ -118,35 +118,35 @@ var globalenv = env {
 	vars {
 		symbol("#t"): true,
 		symbol("#f"): false,
-		symbol("+"): func(a ...interface{}) interface{} {
+		symbol("+"): func(a ...value) value {
 			v := a[0].(number)
 			for _, i := range a[1:] {
 				v += i.(number)
 			}
 			return v
 		},
-		symbol("-"): func(a ...interface{}) interface{} {
+		symbol("-"): func(a ...value) value {
 			v := a[0].(number)
 			for _, i := range a[1:] {
 				v -= i.(number)
 			}
 			return v
 		},
-		symbol("*"): func(a ...interface{}) interface{} {
+		symbol("*"): func(a ...value) value {
 			v := a[0].(number)
 			for _, i := range a[1:] {
 				v *= i.(number)
 			}
 			return v
 		},
-		symbol("/"): func(a ...interface{}) interface{} {
+		symbol("/"): func(a ...value) value {
 			v := a[0].(number)
 			for _, i := range a[1:] {
 				v /= i.(number)
 			}
 			return v
 		},
-		symbol("<="): func(a ...interface{}) interface{} {
+		symbol("<="): func(a ...value) value {
 			return a[0] .(number)<= a[1].(number)
 		}},
 
@@ -157,6 +157,7 @@ var globalenv = env {
 */
 
 type expr interface{} //expressions are symbols, numbers, or lists of other expressions 
+type value interface{} //values are symbols, numbers, procedures or expressions
 type symbol string    //symbols are golang strings
 type number float64   //constant numbers float64
 
