@@ -72,9 +72,7 @@ func eval(e expr, en *env) (re interface{}) {
 
 func apply(p interface{}, args []number) (re interface{}) {
 	switch p := p.(type) {
-	case pNumeric:
-		re = p(args...)
-	case pBoolean:
+	case func(...number) interface{}:
 		re = p(args...)
 	case proc:
 		en := &env{make(vars), p.en}
@@ -116,44 +114,41 @@ func (e env) Find(s symbol) env {
  Primitives
 */
 
-type pNumeric func(...number) number
-type pBoolean func(...number) bool
-
-var globalenv = env{
-	vars{
+var globalenv = env {
+	vars {
 		symbol("#t"): true,
 		symbol("#f"): false,
-		symbol("+"): pNumeric(func(a ...number) (v number) {
-			v = a[0]
+		symbol("+"): func(a ...number) interface{} {
+			v := a[0]
 			for _, i := range a[1:] {
 				v += i
 			}
-			return
-		}),
-		symbol("-"): pNumeric(func(a ...number) (v number) {
-			v = a[0]
+			return v
+		},
+		symbol("-"): func(a ...number) interface{} {
+			v := a[0]
 			for _, i := range a[1:] {
 				v -= i
 			}
-			return
-		}),
-		symbol("*"): pNumeric(func(a ...number) (v number) {
-			v = a[0]
+			return v
+		},
+		symbol("*"): func(a ...number) interface{} {
+			v := a[0]
 			for _, i := range a[1:] {
 				v *= i
 			}
-			return
-		}),
-		symbol("/"): pNumeric(func(a ...number) (v number) {
-			v = a[0]
+			return v
+		},
+		symbol("/"): func(a ...number) interface{} {
+			v := a[0]
 			for _, i := range a[1:] {
 				v /= i
 			}
-			return
-		}),
-		symbol("<="): pBoolean(func(a ...number) (v bool) {
+			return v
+		},
+		symbol("<="): func(a ...number) interface{} {
 			return a[0] <= a[1]
-		})},
+		}},
 
 	nil}
 
