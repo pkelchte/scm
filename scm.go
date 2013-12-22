@@ -1,5 +1,8 @@
 /*
  * A minimal Scheme interpreter, as seen in lis.py and SICP
+ * http://norvig.com/lispy.html
+ * http://mitpress.mit.edu/sicp/full-text/sicp/book/node77.html
+ *
  * Pieter Kelchtermans 2013
  * LICENSE: WTFPL 2.0
  */
@@ -46,10 +49,10 @@ func eval(e expr, en *env) (re value) {
 			en.vars[e[1].(symbol)] = eval(e[2], en)
 			re = "ok"
 		case symbol("lambda"):
-			params := make([]symbol, 0)
-			for _, p := range e[1].([]expr) {
-				params = append(params,
-					p.(symbol))
+			ps := e[1].([]expr)
+			params := make([]symbol, len(ps))
+			for i, p := range ps {
+				params[i] = p.(symbol)
 			}
 			re = proc{params, e[2], en}
 		case symbol("begin"):
@@ -57,10 +60,10 @@ func eval(e expr, en *env) (re value) {
 				re = eval(i, en)
 			}
 		default:
-			values := make([]value, 0)
-			for _, i := range e[1:] {
-				values = append(values,
-					eval(i, en))
+			operands := e[1:]
+			values := make([]value, len(operands))
+			for i, x := range operands {
+				values[i] = eval(x, en)
 			}
 			re = apply(eval(e[0], en), values)
 		}
@@ -114,8 +117,8 @@ func (e env) Find(s symbol) env {
  Primitives
 */
 
-var globalenv = env {
-	vars {
+var globalenv = env{
+	vars{ //aka an incomplete set of compiled-in functions
 		symbol("#t"): true,
 		symbol("#f"): false,
 		symbol("+"): func(a ...value) value {
@@ -147,7 +150,7 @@ var globalenv = env {
 			return v
 		},
 		symbol("<="): func(a ...value) value {
-			return a[0] .(number)<= a[1].(number)
+			return a[0].(number) <= a[1].(number)
 		}},
 
 	nil}
@@ -156,10 +159,10 @@ var globalenv = env {
  Parsing
 */
 
-type expr interface{} //expressions are symbols, numbers, or lists of other expressions 
+type expr interface{}  //expressions are symbols, numbers, or lists of other expressions
 type value interface{} //values are symbols, numbers, procedures or expressions
-type symbol string    //symbols are golang strings
-type number float64   //constant numbers float64
+type symbol string     //symbols are golang strings
+type number float64    //constant numbers float64
 
 func read(s string) expr {
 	tokens := tokenize(s)
@@ -206,12 +209,25 @@ func tokenize(s string) []string {
  Interactivity
 */
 
+func String(e expr) string {
+	switch e := e.(type) {
+	case []expr:
+		v := make([]string, len(e))
+		for i, x := range e {
+			v[i] = String(x)
+		}
+		return "(" + strings.Join(v, " ") + ")"
+	default:
+		return fmt.Sprint(e)
+	}
+}
+
 func Repl() {
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		fmt.Print("> ")
 		if input, err := reader.ReadString('\n'); err == nil {
-			fmt.Println("==>", eval(read(input[:len(input)-1]), &globalenv))
+			fmt.Println("==>", String(eval(read(input[:len(input)-1]), &globalenv)))
 		} else {
 			fmt.Println("Bye.")
 			os.Exit(0)
