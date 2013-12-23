@@ -56,11 +56,11 @@ func eval(expression scmo, en *env) (value scmo) {
 			}
 		default:
 			operands := e[1:]
-			scmos := make([]scmo, len(operands))
+			values := make([]scmo, len(operands))
 			for i, x := range operands {
-				scmos[i] = eval(x, en)
+				values[i] = eval(x, en)
 			}
-			value = apply(eval(e[0], en), scmos)
+			value = apply(eval(e[0], en), values)
 		}
 	default:
 		log.Println("Unknown expression type - EVAL", e)
@@ -180,13 +180,13 @@ type scmo interface{} //scheme objects are e.g. symbols, numbers, expressions, p
 type symbol string     //symbols are golang strings
 type number float64    //constant numbers float64
 
-func read(s string) scmo {
+func read(s string) (expression scmo) {
 	tokens := tokenize(s)
 	return readFrom(&tokens)
 }
 
 //Syntactic Analysis
-func readFrom(tokens *[]string) scmo {
+func readFrom(tokens *[]string) (expression scmo) {
 	if len(*tokens) == 0 {
 		log.Print("unexpected EOF while reading")
 	}
@@ -243,7 +243,9 @@ func Repl() {
 	for {
 		fmt.Print("> ")
 		if input, err := reader.ReadString('\n'); err == nil {
-			fmt.Println("==>", String(eval(read(input[:len(input)-1]), &globalenv)))
+			ans := eval(read(input[:len(input)-1]), &globalenv)
+			globalenv.vars[symbol("ans")] = ans
+			fmt.Println("==>", String(ans))
 		} else {
 			fmt.Println("Bye.")
 			os.Exit(0)
