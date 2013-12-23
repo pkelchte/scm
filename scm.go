@@ -25,47 +25,42 @@ func main() {
  Eval / Apply
 */
 
-func eval(e expr, en *env) (re value) {
-	switch e := e.(type) {
+func eval(expression scmo, en *env) (value scmo) {
+	switch e := expression.(type) {
 	case number:
-		re = e
+		value = e
 	case symbol:
-		re = en.Find(e).vars[e]
-	case []expr:
+		value = en.Find(e).vars[e]
+	case []scmo:
 		switch e[0] {
 		case symbol("quote"):
-			re = e[1]
+			value = e[1]
 		case symbol("if"):
 			if eval(e[1], en).(bool) {
-				re = eval(e[2], en)
+				value = eval(e[2], en)
 			} else {
-				re = eval(e[3], en)
+				value = eval(e[3], en)
 			}
 		case symbol("set!"):
 			v := e[1].(symbol)
 			en.Find(v).vars[v] = eval(e[2], en)
-			re = "ok"
+			value = "ok"
 		case symbol("define"):
 			en.vars[e[1].(symbol)] = eval(e[2], en)
-			re = "ok"
+			value = "ok"
 		case symbol("lambda"):
-			ps := e[1].([]expr)
-			params := make([]symbol, len(ps))
-			for i, p := range ps {
-				params[i] = p.(symbol)
-			}
-			re = proc{params, e[2], en}
+			value = proc{e[1], e[2], en}
 		case symbol("begin"):
 			for _, i := range e[1:] {
-				re = eval(i, en)
+				value = eval(i, en)
 			}
 		default:
 			operands := e[1:]
-			values := make([]value, len(operands))
+			scmos := make([]scmo, len(operands))
 			for i, x := range operands {
-				values[i] = eval(x, en)
+				scmos[i] = eval(x, en)
 			}
-			re = apply(eval(e[0], en), values)
+			value = apply(eval(e[0], en), scmos)
 		}
 	default:
 		log.Println("Unknown expression type - EVAL", e)
@@ -73,16 +68,21 @@ func eval(e expr, en *env) (re value) {
 	return
 }
 
-func apply(p value, args []value) (re value) {
-	switch p := p.(type) {
-	case func(...value) value:
-		re = p(args...)
+func apply(procedure scmo, args []scmo) (value scmo) {
+	switch p := procedure.(type) {
+	case func(...scmo) scmo:
+		value = p(args...)
 	case proc:
 		en := &env{make(vars), p.en}
-		for i := range p.params {
-			en.vars[p.params[i]] = args[i]
+		switch params := p.params.(type) {
+		case []scmo:
+			for i, param := range params {
+				en.vars[param.(symbol)] = args[i]
+			}
+		default:
+			en.vars[params.(symbol)] = args
 		}
-		re = eval(p.body, en)
+		value = eval(p.body, en)
 	default:
 		log.Println("Unknown procedure type - APPLY", p)
 	}
@@ -90,22 +90,21 @@ func apply(p value, args []value) (re value) {
 }
 
 type proc struct {
-	params []symbol
-	body   expr
-	en     *env
+	params, body scmo
+	en           *env
 }
 
 /*
  Environments
 */
 
-type vars map[symbol]value
+type vars map[symbol]scmo
 type env struct {
 	vars
 	outer *env
 }
 
-func (e env) Find(s symbol) env {
+func (e *env) Find(s symbol) *env {
 	if _, ok := e.vars[s]; ok {
 		return e
 	} else {
@@ -117,60 +116,77 @@ func (e env) Find(s symbol) env {
  Primitives
 */
 
-var globalenv = env{
-	vars{ //aka an incomplete set of compiled-in functions
-		symbol("#t"): true,
-		symbol("#f"): false,
-		symbol("+"): func(a ...value) value {
-			v := a[0].(number)
-			for _, i := range a[1:] {
-				v += i.(number)
-			}
-			return v
-		},
-		symbol("-"): func(a ...value) value {
-			v := a[0].(number)
-			for _, i := range a[1:] {
-				v -= i.(number)
-			}
-			return v
-		},
-		symbol("*"): func(a ...value) value {
-			v := a[0].(number)
-			for _, i := range a[1:] {
-				v *= i.(number)
-			}
-			return v
-		},
-		symbol("/"): func(a ...value) value {
-			v := a[0].(number)
-			for _, i := range a[1:] {
-				v /= i.(number)
-			}
-			return v
-		},
-		symbol("<="): func(a ...value) value {
-			return a[0].(number) <= a[1].(number)
-		}},
+var globalenv env
 
-	nil}
+func init() {
+	globalenv = env{
+		vars{ //aka an incomplete set of compiled-in functions
+			symbol("#t"): true,
+			symbol("#f"): false,
+			symbol("+"): func(a ...scmo) scmo {
+				v := a[0].(number)
+				for _, i := range a[1:] {
+					v += i.(number)
+				}
+				return v
+			},
+			symbol("-"): func(a ...scmo) scmo {
+				v := a[0].(number)
+				for _, i := range a[1:] {
+					v -= i.(number)
+				}
+				return v
+			},
+			symbol("*"): func(a ...scmo) scmo {
+				v := a[0].(number)
+				for _, i := range a[1:] {
+					v *= i.(number)
+				}
+				return v
+			},
+			symbol("/"): func(a ...scmo) scmo {
+				v := a[0].(number)
+				for _, i := range a[1:] {
+					v /= i.(number)
+				}
+				return v
+			},
+			symbol("<="): func(a ...scmo) scmo {
+				return a[0].(number) <= a[1].(number)
+			},
+			symbol("equal?"): func(a ...scmo) scmo {
+				return a[0] == a[1]
+			},
+			symbol("cons"): func(a ...scmo) scmo {
+				return []scmo{a[0], a[1]}
+			},
+			symbol("car"): func(a ...scmo) scmo {
+				return a[0].([]scmo)[0]
+			},
+			symbol("cdr"): func(a ...scmo) scmo {
+				return a[0].([]scmo)[1:]
+			},
+			symbol("list"): eval(read(
+				"(lambda z z)"),
+				&globalenv),
+		},
+		nil}
+}
 
 /*
  Parsing
 */
-
-type expr interface{}  //expressions are symbols, numbers, or lists of other expressions
-type value interface{} //values are symbols, numbers, procedures or expressions
+type scmo interface{} //scheme objects are e.g. symbols, numbers, expressions, procedures, lists, ...
 type symbol string     //symbols are golang strings
 type number float64    //constant numbers float64
 
-func read(s string) expr {
+func read(s string) scmo {
 	tokens := tokenize(s)
 	return readFrom(&tokens)
 }
 
 //Syntactic Analysis
-func readFrom(tokens *[]string) expr {
+func readFrom(tokens *[]string) scmo {
 	if len(*tokens) == 0 {
 		log.Print("unexpected EOF while reading")
 	}
@@ -179,7 +195,7 @@ func readFrom(tokens *[]string) expr {
 	*tokens = (*tokens)[1:]
 	switch token {
 	case "(": //a list begins
-		L := make([]expr, 0)
+		L := make([]scmo, 0)
 		for (*tokens)[0] != ")" {
 			L = append(L, readFrom(tokens))
 		}
@@ -209,16 +225,16 @@ func tokenize(s string) []string {
  Interactivity
 */
 
-func String(e expr) string {
-	switch e := e.(type) {
-	case []expr:
-		v := make([]string, len(e))
-		for i, x := range e {
-			v[i] = String(x)
+func String(v scmo) string {
+	switch v := v.(type) {
+	case []scmo:
+		l := make([]string, len(v))
+		for i, x := range v {
+			l[i] = String(x)
 		}
-		return "(" + strings.Join(v, " ") + ")"
+		return "(" + strings.Join(l, " ") + ")"
 	default:
-		return fmt.Sprint(e)
+		return fmt.Sprint(v)
 	}
 }
 
