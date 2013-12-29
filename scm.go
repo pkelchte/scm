@@ -25,13 +25,13 @@ func main() {
  Eval / Apply
 */
 
-func eval(expression scmo, en *env) (value scmo) {
+func eval(expression scmer, en *env) (value scmer) {
 	switch e := expression.(type) {
 	case number:
 		value = e
 	case symbol:
 		value = en.Find(e).vars[e]
-	case []scmo:
+	case []scmer:
 		switch e[0].(symbol) {
 		case "quote":
 			value = e[1]
@@ -56,7 +56,7 @@ func eval(expression scmo, en *env) (value scmo) {
 			}
 		default:
 			operands := e[1:]
-			values := make([]scmo, len(operands))
+			values := make([]scmer, len(operands))
 			for i, x := range operands {
 				values[i] = eval(x, en)
 			}
@@ -68,14 +68,14 @@ func eval(expression scmo, en *env) (value scmo) {
 	return
 }
 
-func apply(procedure scmo, args []scmo) (value scmo) {
+func apply(procedure scmer, args []scmer) (value scmer) {
 	switch p := procedure.(type) {
-	case func(...scmo) scmo:
+	case func(...scmer) scmer:
 		value = p(args...)
 	case proc:
 		en := &env{make(vars), p.en}
 		switch params := p.params.(type) {
-		case []scmo:
+		case []scmer:
 			for i, param := range params {
 				en.vars[param.(symbol)] = args[i]
 			}
@@ -90,7 +90,7 @@ func apply(procedure scmo, args []scmo) (value scmo) {
 }
 
 type proc struct {
-	params, body scmo
+	params, body scmer
 	en           *env
 }
 
@@ -98,7 +98,7 @@ type proc struct {
  Environments
 */
 
-type vars map[symbol]scmo
+type vars map[symbol]scmer
 type env struct {
 	vars
 	outer *env
@@ -123,48 +123,48 @@ func init() {
 		vars{ //aka an incomplete set of compiled-in functions
 			"#t": true,
 			"#f": false,
-			"+": func(a ...scmo) scmo {
+			"+": func(a ...scmer) scmer {
 				v := a[0].(number)
 				for _, i := range a[1:] {
 					v += i.(number)
 				}
 				return v
 			},
-			"-": func(a ...scmo) scmo {
+			"-": func(a ...scmer) scmer {
 				v := a[0].(number)
 				for _, i := range a[1:] {
 					v -= i.(number)
 				}
 				return v
 			},
-			"*": func(a ...scmo) scmo {
+			"*": func(a ...scmer) scmer {
 				v := a[0].(number)
 				for _, i := range a[1:] {
 					v *= i.(number)
 				}
 				return v
 			},
-			"/": func(a ...scmo) scmo {
+			"/": func(a ...scmer) scmer {
 				v := a[0].(number)
 				for _, i := range a[1:] {
 					v /= i.(number)
 				}
 				return v
 			},
-			"<=": func(a ...scmo) scmo {
+			"<=": func(a ...scmer) scmer {
 				return a[0].(number) <= a[1].(number)
 			},
-			"equal?": func(a ...scmo) scmo {
+			"equal?": func(a ...scmer) scmer {
 				return a[0] == a[1]
 			},
-			"cons": func(a ...scmo) scmo {
-				return []scmo{a[0], a[1]}
+			"cons": func(a ...scmer) scmer {
+				return []scmer{a[0], a[1]}
 			},
-			"car": func(a ...scmo) scmo {
-				return a[0].([]scmo)[0]
+			"car": func(a ...scmer) scmer {
+				return a[0].([]scmer)[0]
 			},
-			"cdr": func(a ...scmo) scmo {
-				return a[0].([]scmo)[1:]
+			"cdr": func(a ...scmer) scmer {
+				return a[0].([]scmer)[1:]
 			},
 			"list": eval(read(
 				"(lambda z z)"),
@@ -177,18 +177,19 @@ func init() {
  Parsing
 */
 
-//scheme objects (scmos) are e.g. symbols, numbers, expressions, procedures, lists, ...
-type scmo interface{}
-type symbol string
-type number float64
+//symbols, numbers, expressions, procedures, lists, ... all implement this interface, which enables passing them along in the interpreter
+type scmer interface{}
 
-func read(s string) (expression scmo) {
+type symbol string //symbols are represented by strings
+type number float64 //numbers by float64
+
+func read(s string) (expression scmer) {
 	tokens := tokenize(s)
 	return readFrom(&tokens)
 }
 
 //Syntactic Analysis
-func readFrom(tokens *[]string) (expression scmo) {
+func readFrom(tokens *[]string) (expression scmer) {
 	if len(*tokens) == 0 {
 		log.Print("unexpected EOF while reading")
 	}
@@ -197,7 +198,7 @@ func readFrom(tokens *[]string) (expression scmo) {
 	*tokens = (*tokens)[1:]
 	switch token {
 	case "(": //a list begins
-		L := make([]scmo, 0)
+		L := make([]scmer, 0)
 		for (*tokens)[0] != ")" {
 			L = append(L, readFrom(tokens))
 		}
@@ -227,9 +228,9 @@ func tokenize(s string) []string {
  Interactivity
 */
 
-func String(v scmo) string {
+func String(v scmer) string {
 	switch v := v.(type) {
-	case []scmo:
+	case []scmer:
 		l := make([]string, len(v))
 		for i, x := range v {
 			l[i] = String(x)
