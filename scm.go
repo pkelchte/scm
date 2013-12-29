@@ -27,12 +27,12 @@ func main() {
 
 func eval(expression scmo, en *env) (value scmo) {
 	switch e := expression.(type) {
-	case float64:
+	case number:
 		value = e
-	case string:
+	case symbol:
 		value = en.Find(e).vars[e]
 	case []scmo:
-		switch e[0] {
+		switch e[0].(symbol) {
 		case "quote":
 			value = e[1]
 		case "if":
@@ -42,11 +42,11 @@ func eval(expression scmo, en *env) (value scmo) {
 				value = eval(e[3], en)
 			}
 		case "set!":
-			v := e[1].(string)
+			v := e[1].(symbol)
 			en.Find(v).vars[v] = eval(e[2], en)
 			value = "ok"
 		case "define":
-			en.vars[e[1].(string)] = eval(e[2], en)
+			en.vars[e[1].(symbol)] = eval(e[2], en)
 			value = "ok"
 		case "lambda":
 			value = proc{e[1], e[2], en}
@@ -77,10 +77,10 @@ func apply(procedure scmo, args []scmo) (value scmo) {
 		switch params := p.params.(type) {
 		case []scmo:
 			for i, param := range params {
-				en.vars[param.(string)] = args[i]
+				en.vars[param.(symbol)] = args[i]
 			}
 		default:
-			en.vars[params.(string)] = args
+			en.vars[params.(symbol)] = args
 		}
 		value = eval(p.body, en)
 	default:
@@ -98,13 +98,13 @@ type proc struct {
  Environments
 */
 
-type vars map[string]scmo
+type vars map[symbol]scmo
 type env struct {
 	vars
 	outer *env
 }
 
-func (e *env) Find(s string) *env {
+func (e *env) Find(s symbol) *env {
 	if _, ok := e.vars[s]; ok {
 		return e
 	} else {
@@ -124,35 +124,35 @@ func init() {
 			"#t": true,
 			"#f": false,
 			"+": func(a ...scmo) scmo {
-				v := a[0].(float64)
+				v := a[0].(number)
 				for _, i := range a[1:] {
-					v += i.(float64)
+					v += i.(number)
 				}
 				return v
 			},
 			"-": func(a ...scmo) scmo {
-				v := a[0].(float64)
+				v := a[0].(number)
 				for _, i := range a[1:] {
-					v -= i.(float64)
+					v -= i.(number)
 				}
 				return v
 			},
 			"*": func(a ...scmo) scmo {
-				v := a[0].(float64)
+				v := a[0].(number)
 				for _, i := range a[1:] {
-					v *= i.(float64)
+					v *= i.(number)
 				}
 				return v
 			},
 			"/": func(a ...scmo) scmo {
-				v := a[0].(float64)
+				v := a[0].(number)
 				for _, i := range a[1:] {
-					v /= i.(float64)
+					v /= i.(number)
 				}
 				return v
 			},
 			"<=": func(a ...scmo) scmo {
-				return a[0].(float64) <= a[1].(float64)
+				return a[0].(number) <= a[1].(number)
 			},
 			"equal?": func(a ...scmo) scmo {
 				return a[0] == a[1]
@@ -179,6 +179,8 @@ func init() {
 
 //scheme objects (scmos) are e.g. symbols, numbers, expressions, procedures, lists, ...
 type scmo interface{}
+type symbol string
+type number float64
 
 func read(s string) (expression scmo) {
 	tokens := tokenize(s)
@@ -206,9 +208,9 @@ func readFrom(tokens *[]string) (expression scmo) {
 		return nil
 	default: //an atom occurs
 		if f, err := strconv.ParseFloat(token, 64); err == nil {
-			return f //numbers become float64
+			return number(f)
 		} else {
-			return token //others stay string
+			return symbol(token)
 		}
 	}
 }
