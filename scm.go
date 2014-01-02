@@ -54,6 +54,9 @@ func eval(expression scmer, en *env) (value scmer) {
 			for _, i := range e[1:] {
 				value = eval(i, en)
 			}
+		case "go":
+			go func() { eval(e[1], en) }()
+			value = "ok"
 		default:
 			operands := e[1:]
 			values := make([]scmer, len(operands))
@@ -169,6 +172,16 @@ func init() {
 			},
 			"cdr": func(a ...scmer) scmer {
 				return a[0].([]scmer)[1:]
+			},
+			"make-chan": func(a ...scmer) scmer {
+				return make(chan scmer, int(a[0].(number)))
+			},
+			"->": func(a ...scmer) scmer {
+				a[0].(chan scmer) <- a[1]
+				return "ok"
+			},
+			"<-": func(a ...scmer) scmer {
+				return <-a[0].(chan scmer)
 			},
 			"list": eval(read(
 				"(lambda z z)"),
