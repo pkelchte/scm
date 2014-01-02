@@ -76,8 +76,10 @@ func apply(procedure scmer, args []scmer) (value scmer) {
 		en := &env{make(vars), p.en}
 		switch params := p.params.(type) {
 		case []scmer:
-			for i, param := range params {
-				en.vars[param.(symbol)] = args[i]
+			if params[0] != symbol("") {
+				for i, param := range params {
+					en.vars[param.(symbol)] = args[i]
+				}
 			}
 		default:
 			en.vars[params.(symbol)] = args
