@@ -32,7 +32,7 @@ func eval(expression scmer, en *env) (value scmer) {
 	case symbol:
 		value = en.Find(e).vars[e]
 	case []scmer:
-		switch e[0].(symbol) {
+		switch car, _ := e[0].(symbol); car {
 		case "quote":
 			value = e[1]
 		case "if":
@@ -180,7 +180,7 @@ func init() {
 //symbols, numbers, expressions, procedures, lists, ... all implement this interface, which enables passing them along in the interpreter
 type scmer interface{}
 
-type symbol string //symbols are represented by strings
+type symbol string  //symbols are represented by strings
 type number float64 //numbers by float64
 
 func read(s string) (expression scmer) {
