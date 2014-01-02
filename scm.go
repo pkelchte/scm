@@ -76,7 +76,9 @@ func apply(procedure scmer, args []scmer) (value scmer) {
 		en := &env{make(vars), p.en}
 		switch params := p.params.(type) {
 		case []scmer:
-			if params[0] != symbol("") {
+			if len(params) == 1 && params[0] == symbol("") {
+				//an empty environment
+			} else {
 				for i, param := range params {
 					en.vars[param.(symbol)] = args[i]
 				}
