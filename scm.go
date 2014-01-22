@@ -130,8 +130,6 @@ var globalenv env
 func init() {
 	globalenv = env{
 		vars{ //aka an incomplete set of compiled-in functions
-			"#t": true,
-			"#f": false,
 			"+": func(a ...scmer) scmer {
 				v := a[0].(number)
 				for _, i := range a[1:] {
