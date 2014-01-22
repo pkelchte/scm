@@ -79,10 +79,8 @@ func apply(procedure scmer, args []scmer) (value scmer) {
 		en := &env{make(vars), p.en}
 		switch params := p.params.(type) {
 		case []scmer:
-			if !isEmptyList(params) {
-				for i, param := range params {
-					en.vars[param.(symbol)] = args[i]
-				}
+			for i, param := range params {
+				en.vars[param.(symbol)] = args[i]
 			}
 		case symbol:
 			en.vars[params] = args
@@ -92,10 +90,6 @@ func apply(procedure scmer, args []scmer) (value scmer) {
 		log.Println("Unknown procedure type - APPLY", p)
 	}
 	return
-}
-
-func isEmptyList(exp []scmer) bool {
-	return len(exp) == 0 || len(exp) == 1 && exp[0] == symbol("")
 }
 
 type proc struct {
@@ -186,9 +180,6 @@ func init() {
 			"list": eval(read(
 				"(lambda z z)"),
 				&globalenv),
-			"null?": func(a ...scmer) scmer {
-				return isEmptyList(a[0].([]scmer))
-			},
 		},
 		nil}
 }
@@ -217,7 +208,9 @@ func readFrom(tokens *[]string) (expression scmer) {
 	case "(": //a list begins
 		L := make([]scmer, 0)
 		for (*tokens)[0] != ")" {
-			L = append(L, readFrom(tokens))
+			if i := readFrom(tokens); i != symbol("") {
+				L = append(L, i)
+			}
 		}
 		*tokens = (*tokens)[1:]
 		return L
