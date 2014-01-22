@@ -207,11 +207,8 @@ func read(s string) (expression scmer) {
 
 //Syntactic Analysis
 func readFrom(tokens *[]string) (expression scmer) {
-	if len(*tokens) == 0 {
-		log.Print("unexpected EOF while reading")
-	}
-	token := (*tokens)[0]
 	//pop first element from tokens
+	token := (*tokens)[0]
 	*tokens = (*tokens)[1:]
 	switch token {
 	case "(": //a list begins
@@ -221,9 +218,6 @@ func readFrom(tokens *[]string) (expression scmer) {
 		}
 		*tokens = (*tokens)[1:]
 		return L
-	case ")":
-		log.Print("unexpected )")
-		return nil
 	default: //an atom occurs
 		if f, err := strconv.ParseFloat(token, 64); err == nil {
 			return number(f)
