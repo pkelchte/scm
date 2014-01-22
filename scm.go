@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -156,7 +157,7 @@ func init() {
 				return a[0].(number) <= a[1].(number)
 			},
 			"equal?": func(a ...scmer) scmer {
-				return a[0] == a[1]
+				return reflect.DeepEqual(a[0], a[1])
 			},
 			"cons": func(a ...scmer) scmer {
 				return []scmer{a[0], a[1]}
