@@ -254,9 +254,8 @@ func Repl() {
 	for {
 		fmt.Print("> ")
 		if input, err := reader.ReadString('\n'); err == nil {
-			ans := eval(read(input[:len(input)-1]), &globalenv)
-			globalenv.vars["ans"] = ans
-			fmt.Println("==>", String(ans))
+			fmt.Println("==>", String(
+				eval(read(input[:len(input)-1]), &globalenv)))
 		} else {
 			fmt.Println("Bye.")
 			os.Exit(0)
