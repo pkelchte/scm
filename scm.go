@@ -255,15 +255,8 @@ func String(v scmer) string {
 }
 
 func Repl() {
-	reader := bufio.NewReader(os.Stdin)
-	for {
-		fmt.Print("> ")
-		if input, err := reader.ReadString('\n'); err == nil {
-			fmt.Println("==>", String(
-				eval(read(input[:len(input)-1]), &globalenv)))
-		} else {
-			fmt.Println("Bye.")
-			os.Exit(0)
-		}
+	scanner := bufio.NewScanner(os.Stdin)
+	for fmt.Print("> "); scanner.Scan(); fmt.Print("> ") {
+		fmt.Println("==>", String(eval(read(scanner.Text()), &globalenv)))
 	}
 }
