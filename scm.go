@@ -160,7 +160,7 @@ func init() {
 				return reflect.DeepEqual(a[0], a[1])
 			},
 			"cons": func(a ...scmer) scmer {
-				return []scmer{a[0], a[1]}
+				return append([]scmer{a[0]}, a[1].([]scmer)...)
 			},
 			"car": func(a ...scmer) scmer {
 				return a[0].([]scmer)[0]
