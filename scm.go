@@ -160,7 +160,12 @@ func init() {
 				return reflect.DeepEqual(a[0], a[1])
 			},
 			"cons": func(a ...scmer) scmer {
-				return append([]scmer{a[0]}, a[1].([]scmer)...)
+				switch car := a[0]; cdr := a[1].(type) {
+				case []scmer:
+					return append([]scmer{car}, cdr...)
+				default:
+					return []scmer{car, cdr}
+				}
 			},
 			"car": func(a ...scmer) scmer {
 				return a[0].([]scmer)[0]
