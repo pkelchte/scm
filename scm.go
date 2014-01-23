@@ -83,8 +83,8 @@ func apply(procedure scmer, args []scmer) (value scmer) {
 			for i, param := range params {
 				en.vars[param.(symbol)] = args[i]
 			}
-		case symbol:
-			en.vars[params] = args
+		default:
+			en.vars[params.(symbol)] = args
 		}
 		value = eval(p.body, en)
 	default:
